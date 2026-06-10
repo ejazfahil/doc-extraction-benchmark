@@ -28,11 +28,16 @@ over the OCR baseline on CORD. The benchmark is built to confirm *or refute* it.
 - **Stats:** bootstrap CIs + McNemar (frequentist, in-repo); hierarchical Bayes (companion repo).
 
 ## Status
-🚧 **Scaffolding.** The data contract, CORD loader, extractor protocol, and binary
-scoring are implemented and unit-tested. **Not yet built:** the extractor backends,
-the run/score CLI, and the statistics layer. **No results are reported yet** — this
-section will carry a real table (with `n`, dataset split, hardware, and a
-reproduce command) only after a genuine run. No placeholder numbers.
+🚧 **Implemented (logic complete, unit-tested):** the data contract + strict schema,
+CORD loader, scoring, the Extractor protocol, **OCR baselines** (Tesseract / EasyOCR
++ a rule-based field parser), the **Pixtral VLM** path, the **`docbench run`/`score`
+CLI**, and the **frequentist stats** (field accuracy = recall, document-clustered
+bootstrap CIs, exact McNemar). Pure logic runs dep-free.
+
+**Not yet done:** a real end-to-end run. That needs a Python 3.11–3.12 venv (plus the
+Tesseract binary for OCR, and `MISTRAL_API_KEY` for the VLM path). **No results are
+reported yet** — this section will carry a real table (with `n`, split, hardware, and
+a reproduce command) only after a genuine run. No placeholder numbers.
 
 ## Results
 _Pending first run. Will include: per-field F1 by system (OCR vs VLM) with 95% CIs,
@@ -44,7 +49,11 @@ and an accuracy-vs-cost Pareto frontier._
 uv venv --python 3.12 && source .venv/bin/activate   # or pyenv/conda
 pip install -e ".[ocr,vlm,stats,dev]"
 make test
-# docbench run --models tesseract,pixtral-12b --split test   # (CLI WIP)
+# keyless first numbers (OCR only):
+docbench run --models tesseract,easyocr --split test --limit 50 --out results.parquet
+docbench score results.parquet --baseline tesseract
+# add the VLM (needs MISTRAL_API_KEY):
+docbench run --models tesseract,pixtral-12b-2409 --split test --limit 50 --out results.parquet
 ```
 
 ## Data contract
