@@ -37,7 +37,7 @@ _DEFAULT_MODEL = "pixtral-12b-2409"
 _PROMPT = (
     "You are extracting fields from a receipt image. Return ONLY a JSON object "
     "whose keys are EXACTLY these field names and whose values are the extracted "
-    "string (a number like \"12.50\"), or null if the field is not present:\n"
+    'string (a number like "12.50"), or null if the field is not present:\n'
     + "\n".join(f"  - {f}" for f in CANONICAL_FIELDS)
     + "\nDo not invent values. Do not add other keys. Output JSON only."
 )

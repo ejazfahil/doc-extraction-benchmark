@@ -1,6 +1,6 @@
 # doc-extraction-benchmark — when is a VLM actually worth it for document extraction?
 
-![status](https://img.shields.io/badge/status-WIP%20scaffolding-yellow)
+[![CI](https://github.com/ejazfahil/doc-extraction-benchmark/actions/workflows/ci.yml/badge.svg)](https://github.com/ejazfahil/doc-extraction-benchmark/actions/workflows/ci.yml)
 ![python](https://img.shields.io/badge/python-3.11%E2%80%933.12-blue)
 ![license](https://img.shields.io/badge/license-MIT-green)
 
