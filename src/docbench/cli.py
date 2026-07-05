@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 import typer
@@ -11,7 +12,7 @@ from rich.table import Table
 app = typer.Typer(add_completion=False, help="VLM-vs-OCR field-extraction benchmark on CORD.")
 
 
-def _build_extractor(name: str):
+def _build_extractor(name: str, vlm_base_url: str = ""):
     """Resolve a model name to an Extractor instance (heavy imports are lazy)."""
     key = name.strip().lower()
     if key == "tesseract":
@@ -25,8 +26,21 @@ def _build_extractor(name: str):
     if key.startswith("pixtral") or key.startswith("mistral"):
         from docbench.extractors.vlm_pixtral import PixtralExtractor
 
-        return PixtralExtractor(model=name)
-    raise typer.BadParameter(f"unknown model '{name}' (try: tesseract, easyocr, pixtral-12b-2409)")
+        return PixtralExtractor(model=name, base_url=vlm_base_url or "https://api.mistral.ai/v1")
+    if "/" in name:
+        # OpenAI-compatible vision model addressed by a "vendor/model" id
+        # (e.g. "openai/gpt-4o-mini", "mistralai/pixtral-12b"), served via OpenRouter
+        # by default. Uses OPENROUTER_API_KEY.
+        from docbench.extractors.vlm_pixtral import PixtralExtractor
+
+        return PixtralExtractor(
+            model=name,
+            base_url=vlm_base_url or "https://openrouter.ai/api/v1",
+            api_key=os.getenv("OPENROUTER_API_KEY"),
+        )
+    raise typer.BadParameter(
+        f"unknown model '{name}' (try: tesseract, easyocr, pixtral-12b-2409, openai/gpt-4o-mini)"
+    )
 
 
 @app.command()
@@ -36,6 +50,9 @@ def run(
     limit: int = typer.Option(0, help="Max documents (0 = all)."),
     runs: int = typer.Option(1, min=1, help="Repetitions per (doc, model) for variance."),
     out: Path = typer.Option(Path("results.parquet"), help="Output parquet path."),
+    vlm_base_url: str = typer.Option(
+        "", help="Base URL for an OpenAI-compatible VLM (e.g. https://openrouter.ai/api/v1)."
+    ),
 ) -> None:
     """Run extractors over CORD and write item-level results conforming to the contract."""
     import pandas as pd
@@ -44,7 +61,7 @@ def run(
     from docbench.schema import COLUMNS, ResultsSchema
     from docbench.scoring.to_items import build_rows
 
-    extractors = [_build_extractor(m) for m in models.split(",") if m.strip()]
+    extractors = [_build_extractor(m, vlm_base_url) for m in models.split(",") if m.strip()]
     docs = list(load_cord(split=split, limit=limit or None))
     rprint(f"[bold]{len(docs)}[/bold] docs × [bold]{len(extractors)}[/bold] models × {runs} run(s)")
 

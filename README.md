@@ -171,20 +171,32 @@ doc-extraction-benchmark/
 
 ## Status & Results
 
-> 🚧 **Implemented (logic complete, unit-tested):** the data contract + strict
-> schema, CORD loader, scoring, the `Extractor` protocol, **OCR baselines**
-> (Tesseract / EasyOCR + rule-based parser), the **Pixtral VLM** path, the
-> **`docbench run`/`score` CLI**, and the **frequentist stats** (field accuracy =
-> recall, document-clustered bootstrap CIs, exact McNemar). Pure logic runs
-> dependency-free and is covered by the `tests/` suite.
->
-> **Not yet done:** a real end-to-end run. That needs a Python 3.11–3.12 venv
-> (plus the Tesseract binary for OCR, and `MISTRAL_API_KEY` for the VLM path).
+> ✅ **Run end-to-end.** The numbers below come from real runs on CORD-v2 (test),
+> committed under `results/` (`*.parquet` + `results_summary.json`) and reproducible
+> with the commands in [Getting Started](#getting-started). Nothing is estimated.
 
-**No results are reported yet — and none are faked.** This section will carry a
-real table (with `n`, split, hardware, and a reproduce command) only after a
-genuine run, including per-field F1-by-system with 95% CIs and an
-accuracy-vs-cost Pareto frontier.
+### Results (measured)
+
+**Tesseract + rule parser — full CORD-v2 test (99 docs, 344 fields)**
+
+| Model | Field recall | 95% CI (clustered bootstrap) |
+|-------|--------------|------------------------------|
+| Tesseract + rules (English) | **0.087** | [0.050, 0.130] |
+
+That ~9% is the honest floor a VLM must beat: CORD receipts are largely Indonesian and the parser is deliberately ~50 lines of keyword/amount rules.
+
+**VLM vs OCR — paired head-to-head (6 docs, same receipts)**
+
+| Model | Field recall | 95% CI |
+|-------|--------------|--------|
+| **gpt-4o-mini (VLM, via OpenRouter)** | **0.727** | [0.381, 0.958] |
+| Tesseract + rules (OCR) | 0.136 | [0.000, 0.304] |
+
+**Exact McNemar:** the VLM wins **14** of the discordant field pairs to OCR's **1** (of 22) — **p = 0.0010**, i.e. the VLM is significantly more accurate.
+
+![VLM vs OCR field extraction on CORD](results/plots/vlm_vs_ocr_accuracy.png)
+
+**Honest caveats.** The VLM head-to-head is **N=6** — small, because it ran on a shoestring hosted-API budget (~$0.03 total); the wide CI reflects that, though the effect is large enough to clear McNemar significance. Scale it with `--limit`. The OCR baseline uses English-only Tesseract; Indonesian language data or a tuned parser would raise it. OCR is free; only the VLM path costs money.
 
 ---
 
@@ -201,9 +213,14 @@ make test
 docbench run --models tesseract,easyocr --split test --limit 50 --out results.parquet
 docbench score results.parquet --baseline tesseract
 
-# add the VLM (needs MISTRAL_API_KEY):
+# add a VLM head-to-head — Mistral/Pixtral (needs MISTRAL_API_KEY):
 docbench run --models tesseract,pixtral-12b-2409 --split test --limit 50 --out results.parquet
-docbench score results.parquet --baseline tesseract
+
+# ...or any OpenAI-compatible vision model via OpenRouter (needs OPENROUTER_API_KEY):
+OPENROUTER_API_KEY=sk-or-... docbench run \
+    --models tesseract,openai/gpt-4o-mini --split test --limit 6 \
+    --vlm-base-url https://openrouter.ai/api/v1 --out results/headtohead.parquet
+docbench score results/headtohead.parquet --baseline tesseract
 ```
 
 `docbench score` prints per-model field accuracy with 95% clustered-bootstrap CIs

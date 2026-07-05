@@ -1,0 +1,41 @@
+{
+  "dataset": "naver-clova-ix/cord-v2 (test split)",
+  "metric": "field-level recall (exact price match after normalize_price)",
+  "tesseract_full_test": {
+    "n_docs": 99,
+    "n_items": 344,
+    "accuracy": 0.087,
+    "ci95": [
+      0.05,
+      0.13
+    ]
+  },
+  "head_to_head_n6": {
+    "openai/gpt-4o-mini": {
+      "accuracy": 0.727,
+      "ci95": [
+        0.381,
+        0.958
+      ],
+      "n_items": 22,
+      "n_docs": 6
+    },
+    "tesseract": {
+      "accuracy": 0.136,
+      "ci95": [
+        0.0,
+        0.304
+      ],
+      "n_items": 22,
+      "n_docs": 6
+    }
+  },
+  "mcnemar": {
+    "a_better_vlm": 14,
+    "b_better_ocr": 1,
+    "n_discordant": 22,
+    "exact_p": 0.001
+  },
+  "vlm_model": "openai/gpt-4o-mini (via OpenRouter)",
+  "vlm_note": "small N (budget-limited); extend with --limit"
+}

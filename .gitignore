@@ -19,6 +19,12 @@ data/
 results/*
 !results/.gitkeep
 !results/schema_example.parquet
+# Committed real-result artifacts (see README › Results)
+!results/ocr_test100.parquet
+!results/headtohead_n6.parquet
+!results/results_summary.json
+!results/plots/
+!results/plots/*.png
 
 # Secrets
 .env

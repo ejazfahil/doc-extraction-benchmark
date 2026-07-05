@@ -67,9 +67,11 @@ class PixtralExtractor:
     ) -> None:
         self.name = model
         self.model = model
-        self._api_key = api_key or os.getenv("MISTRAL_API_KEY")
+        self._api_key = api_key or os.getenv("MISTRAL_API_KEY") or os.getenv("OPENROUTER_API_KEY")
         if not self._api_key:
-            raise ValueError("MISTRAL_API_KEY not set (pass api_key= or set the env var)")
+            raise ValueError(
+                "No API key: pass api_key= or set MISTRAL_API_KEY / OPENROUTER_API_KEY."
+            )
         self._base_url = base_url.rstrip("/")
         self._pricing = pricing or PixtralPricing()
         self._timeout = timeout
@@ -110,7 +112,7 @@ class PixtralExtractor:
                     "role": "user",
                     "content": [
                         {"type": "text", "text": _PROMPT},
-                        {"type": "image_url", "image_url": self._to_data_uri(image)},
+                        {"type": "image_url", "image_url": {"url": self._to_data_uri(image)}},
                     ],
                 }
             ],
