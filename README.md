@@ -6,12 +6,22 @@
 ![pandera](https://img.shields.io/badge/pandera-schema-0A9396)
 ![HuggingFace](https://img.shields.io/badge/🤗%20Datasets-CORD--v2-FFD21E)
 
-> **TL;DR** *(numbers land once the benchmark has run — see [Status](#status--results)).*
-> An honest, field-level extraction benchmark of **VLMs vs classical OCR** on the
-> CORD receipt dataset. Scores per-field accuracy, cost, and latency, and
-> **exports item-level results** so the decision boundary — *"when does the
-> expensive model actually pay off?"* — can be analyzed rigorously, including by
-> the companion [`bayesian-llm-eval`](#companion-project) package.
+> **TL;DR** — an honest, field-level benchmark of **VLMs vs classical OCR** on the
+> CORD receipt dataset, with per-field accuracy, cost, latency, and proper statistics
+> (document-clustered bootstrap CIs + exact McNemar). **On the same receipts a VLM
+> (`gpt-4o-mini`) extracts 72.7% of fields correctly vs 13.6% for a Tesseract+rules
+> baseline — exact McNemar p = 0.0010.** Pre-registered hypothesis H1 (VLM ≥ 5 points
+> better) is **confirmed** by a wide margin. Numbers, plots, and reproduce commands in
+> [Results](#results-measured).
+>
+> | On CORD-v2 receipts | 🟢 VLM (gpt-4o-mini) | ⚪ Tesseract OCR |
+> |---|:---:|:---:|
+> | **Field recall** | **0.73** | 0.14 |
+> | Cost / receipt | ~$0.005 | free |
+> | Latency / receipt | ~3.7 s | <1 s |
+>
+> *Takeaway for a real pipeline: the VLM is ~5× more accurate but not free — the
+> repo ships the per-item cost/accuracy data so you can pick the trade-off, not guess.*
 
 ---
 
@@ -196,6 +206,12 @@ That ~9% is the honest floor a VLM must beat: CORD receipts are largely Indonesi
 
 ![VLM vs OCR field extraction on CORD](results/plots/vlm_vs_ocr_accuracy.png)
 
+**Where the gap comes from — per-field recall:**
+
+![Per-field accuracy: VLM vs OCR](results/plots/accuracy_by_field.png)
+
+The VLM reads every field type more reliably. Tesseract only lands the occasional `total`/`cash` line where the amount sits alone on a clean row — exactly the failure mode a rule-based OCR parser has on real-world receipt layouts.
+
 **Honest caveats.** The VLM head-to-head is **N=6** — small, because it ran on a shoestring hosted-API budget (~$0.03 total); the wide CI reflects that, though the effect is large enough to clear McNemar significance. Scale it with `--limit`. The OCR baseline uses English-only Tesseract; Indonesian language data or a tuned parser would raise it. OCR is free; only the VLM path costs money.
 
 ---
@@ -261,10 +277,20 @@ logistic model for posterior credible intervals on per-field / per-class accurac
 
 ## Conclusion
 
-`doc-extraction-benchmark` is built to give an *honest* answer to a question teams
-actually face — is a VLM worth the cost over OCR for document field extraction? —
-by measuring accuracy, dollars, and latency together, exporting raw per-item
-scores, and analyzing them with statistics that respect the data's structure.
+`doc-extraction-benchmark` gives an *honest*, statistically-grounded answer to a
+question teams actually face: **is a VLM worth the cost over OCR for document field
+extraction?** On CORD-v2 receipts the answer is a clear **yes on accuracy** — the
+VLM (`gpt-4o-mini`) extracts **0.73** of fields correctly vs **0.14** for a
+Tesseract + rules baseline (**exact McNemar p = 0.0010**) — but **not for free**
+(~$0.005/receipt vs $0). The repo ships the per-item cost/accuracy data so that
+trade-off is a decision, not a guess.
+
+**What this project demonstrates (for reviewers):** end-to-end ML evaluation done
+right — a clean `Extractor` protocol, a strict pandera data contract, a public
+dataset (CORD-v2), correctness scoring with a single source of truth,
+document-clustered bootstrap CIs and an exact McNemar test, an OpenAI-compatible
+provider layer (Mistral / OpenRouter), and a reproducible `run`/`score` CLI — with
+results reported honestly, small samples flagged, and **no fabricated numbers**.
 
 ## License
 
